@@ -1,8 +1,11 @@
+from __future__ import print_function
 import os
 import sys
-import yaml
+
 from cassandra.cluster import Cluster
-from cqlexecutor import CQLExecutor
+import yaml
+
+from cdeploy import cqlexecutor
 
 
 class Migrator:
@@ -12,11 +15,15 @@ class Migrator:
         self.session = session
 
     def run_migrations(self):
-        CQLExecutor.init_table(self.session)
+        cqlexecutor.CQLExecutor.init_table(self.session)
 
         top_version = self.get_top_version()
-        new_migration_filter = \
-            lambda f: os.path.isfile(os.path.join(self.migrations_path, f)) and self.migration_version(f) > top_version
+
+        def new_migration_filter(f):
+            return (
+                os.path.isfile(os.path.join(self.migrations_path, f)) and
+                self.migration_version(f) > top_version
+            )
         new_migrations = self.filter_migrations(new_migration_filter)
 
         [self.apply_migration(file_name) for file_name in new_migrations]
@@ -26,16 +33,23 @@ class Migrator:
         if top_version == 0:
             return
 
-        top_version_filter = \
-            lambda f: os.path.isfile(os.path.join(self.migrations_path, f)) and self.migration_version(f) == top_version
-        top_migration = self.filter_migrations(top_version_filter)[0]
+        def top_version_filter(f):
+            return (
+                os.path.isfile(os.path.join(self.migrations_path, f)) and
+                self.migration_version(f) == top_version
+            )
+        top_migration = list(self.filter_migrations(top_version_filter))[0]
 
-        CQLExecutor.execute_undo(self.session, self.read_migration(top_migration))
-        CQLExecutor.rollback_schema_migration(self.session)
-        print('  -> Migration {0} undone ({1})\n'.format(top_version, top_migration))
+        cqlexecutor.CQLExecutor.execute_undo(
+            self.session,
+            self.read_migration(top_migration)
+        )
+        cqlexecutor.CQLExecutor.rollback_schema_migration(self.session)
+        print('  -> Migration {0} undone ({1})\n'.format(top_version,
+                                                         top_migration))
 
     def get_top_version(self):
-        result = CQLExecutor.get_top_version(self.session)
+        result = cqlexecutor.CQLExecutor.get_top_version(self.session)
         top_version = result[0].version if len(result) > 0 else 0
         print('Current version is {0}'.format(top_version))
         return top_version
@@ -53,8 +67,8 @@ class Migrator:
         migration_script = self.read_migration(file_name)
         version = self.migration_version(file_name)
 
-        CQLExecutor.execute(self.session, migration_script)
-        CQLExecutor.add_schema_migration(self.session, version)
+        cqlexecutor.CQLExecutor.execute(self.session, migration_script)
+        cqlexecutor.CQLExecutor.add_schema_migration(self.session, version)
         print('  -> Migration {0} applied ({1})\n'.format(version, file_name))
 
     def read_migration(self, file_name):
@@ -76,9 +90,12 @@ def main():
         undo = True
         sys.argv.remove('--undo')
 
-    migrations_path = DEFAULT_MIGRATIONS_PATH if len(sys.argv) == 1 else sys.argv[1]
+    migrations_path = (
+        DEFAULT_MIGRATIONS_PATH if len(sys.argv) == 1 else sys.argv[1]
+    )
 
-    if invalid_migrations_dir(migrations_path) or missing_config(migrations_path):
+    if (invalid_migrations_dir(migrations_path) or
+            missing_config(migrations_path)):
         return
 
     config = load_config(migrations_path, os.getenv('ENV'))

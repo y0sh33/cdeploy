@@ -1,3 +1,6 @@
+from __future__ import print_function
+
+
 class CQLExecutor:
     def __init__(self):
         pass
@@ -5,8 +8,10 @@ class CQLExecutor:
     @staticmethod
     def init_table(session):
         session.execute("""
-            CREATE TABLE IF NOT EXISTS schema_migrations (type text, version int, PRIMARY KEY(type, version))
-            WITH COMMENT = 'Schema migration history' AND CLUSTERING ORDER BY (version DESC)
+            CREATE TABLE IF NOT EXISTS schema_migrations
+                    (type text, version int, PRIMARY KEY(type, version))
+                WITH COMMENT = 'Schema migration history'
+                AND CLUSTERING ORDER BY (version DESC)
         """)
 
     @staticmethod
@@ -31,18 +36,26 @@ class CQLExecutor:
 
     @staticmethod
     def add_schema_migration(session, version):
-        session.execute("INSERT INTO schema_migrations (type, version) VALUES ('migration', {0})".format(version))
+        session.execute("""
+            INSERT INTO schema_migrations (type, version)
+                VALUES ('migration', {0})""".format(version))
 
     @staticmethod
     def rollback_schema_migration(session):
         top_version = CQLExecutor.get_top_version(session)[0].version
-        session.execute("DELETE FROM schema_migrations WHERE type = 'migration' AND version = {0}".format(top_version))
+        session.execute("""
+            DELETE FROM schema_migrations
+                WHERE type = 'migration'
+                    AND version = {0}""".format(top_version))
 
 
 def parse_cql(section_func, script):
     section_to_run = section_func(script)
     collapsed_script = section_to_run.replace('\n', ' ')
-    statements = [line.strip() for line in collapsed_script.split(';') if line.strip() != '']
+    statements = [
+        line.strip() for line in collapsed_script.split(';')
+        if line.strip() != ''
+    ]
     return statements
 
 
