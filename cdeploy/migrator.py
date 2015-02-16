@@ -55,7 +55,8 @@ class Migrator:
         return top_version
 
     def filter_migrations(self, filter_func):
-        migration_dir_listing = os.listdir(self.migrations_path)
+        migration_dir_listing = sorted(os.listdir(self.migrations_path),
+                                       key=self.migration_version)
         return filter(
             filter_func,
             migration_dir_listing)
