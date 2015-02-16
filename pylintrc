@@ -1,0 +1,7 @@
+[MASTER]
+errors-only=yes
+
+[REPORTS]
+output-format=text
+reports=no
+msg-template={path}:{line}: [{msg_id}({symbol}), {obj}] {msg}
