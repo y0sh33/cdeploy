@@ -8,8 +8,8 @@ Installation
 
 ```pip install cdeploy```
 
-Usage
-=====
+Command Line Usage
+==================
 
 By default, cdeploy will look for migrations in './migrations'. This can be overridden by passing the path to your migrations directory as the first argument:
 
@@ -39,6 +39,15 @@ Migrations can also specify how to revert the changes by including additional st
 To undo the most recently applied migration, run:
 
     cdeploy --undo
+
+Python Library Usage
+====================
+```python
+    from cdeploy import migrator
+    
+    schema_migrator = migrator.Migrator('/path/to/migrations/directory', cassandra_session)
+    schema_migrator.run_migrations()
+```
 
 Configuration
 ====
