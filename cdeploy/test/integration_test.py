@@ -9,7 +9,7 @@ session = cluster.connect()
 def reset_db(keyspace):
     session.execute('DROP KEYSPACE IF EXISTS {0}'.format(keyspace))
     session.execute("""
-        CREATE KEYSPACE " + keyspace + "
+        CREATE KEYSPACE """ + keyspace + """
             WITH replication =
                 {'class': 'SimpleStrategy', 'replication_factor': '1'}
     """)
