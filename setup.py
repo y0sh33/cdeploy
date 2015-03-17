@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='cdeploy',
-    version='1.1',
+    version='1.2',
     description='A tool for managing Cassandra schema migrations',
     author='David McHoull',
     author_email='dmchoull@gmail.com',
