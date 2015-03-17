@@ -1,9 +1,12 @@
 import os
+import ssl
 import unittest
 try:
     from unittest import mock  # pylint: disable-msg=E0611
 except ImportError:
     import mock
+
+import cassandra
 
 from cdeploy import migrator
 from cdeploy import cqlexecutor
@@ -104,6 +107,95 @@ class TopSchemaVersionTests(unittest.TestCase):
         version = self.migrator.get_top_version()
 
         self.assertEquals(version, 7)
+
+
+class SessionTests(unittest.TestCase):
+    def setUp(self):
+        cluster_patcher = mock.patch('cdeploy.migrator.Cluster')
+        self.mock_cluster = cluster_patcher.start()
+        self.addCleanup(cluster_patcher.stop)
+
+        self.config = {
+            'hosts': ['cassandra.local'],
+            'keyspace': 'test',
+        }
+
+    def test_auth_disabled(self):
+        migrator.get_session(self.config)
+
+        args, kwargs = self.mock_cluster.call_args
+        self.assertEqual(None, kwargs['auth_provider'])
+
+    def test_auth_enabled(self):
+        self.config['auth_enabled'] = True
+        self.config['auth_username'] = 'username'
+        self.config['auth_password'] = 'password'
+
+        patch_path = 'cdeploy.migrator.auth.PlainTextAuthProvider'
+        with mock.patch(patch_path) as mock_provider:
+            provider = mock.Mock()
+            mock_provider.return_value = provider
+
+            migrator.get_session(self.config)
+
+            args, kwargs = mock_provider.call_args
+            self.assertEqual(self.config['auth_username'], kwargs['username'])
+            self.assertEqual(self.config['auth_password'], kwargs['password'])
+
+            args, kwargs = self.mock_cluster.call_args
+            self.assertEqual(provider, kwargs['auth_provider'])
+
+    def test_ssl_disabled(self):
+        migrator.get_session(self.config)
+
+        args, kwargs = self.mock_cluster.call_args
+        self.assertEqual(None, kwargs['ssl_options'])
+
+    def test_ssl_enabled(self):
+        self.config['ssl_enabled'] = True
+        self.config['ssl_ca_certs'] = '/path/to/ca/certs'
+
+        migrator.get_session(self.config)
+
+        args, kwargs = self.mock_cluster.call_args
+        self.assertEqual(
+            {
+                'ca_certs': self.config['ssl_ca_certs'],
+                'ssl_version': ssl.PROTOCOL_TLSv1,  # pylint: disable=E1101
+            },
+            kwargs['ssl_options'],
+        )
+
+    def test_consistency_level_default(self):
+        level = mock.Mock()
+        mock_session = mock.Mock(default_consistency_level=level)
+        mock_cluster = mock.Mock()
+        mock_cluster.connect.return_value = mock_session
+        self.mock_cluster.return_value = mock_cluster
+
+        session = migrator.get_session(self.config)
+
+        self.assertEqual(level, session.default_consistency_level)
+
+    def test_consistency_level_ALL(self):
+        self.config['consistency_level'] = 'ALL'
+
+        session = migrator.get_session(self.config)
+
+        self.assertEqual(
+            cassandra.ConsistencyLevel.ALL,
+            session.default_consistency_level,
+        )
+
+    def test_consistency_level_EACH_QUORUM(self):
+        self.config['consistency_level'] = 'EACH_QUORUM'
+
+        session = migrator.get_session(self.config)
+
+        self.assertEqual(
+            cassandra.ConsistencyLevel.EACH_QUORUM,
+            session.default_consistency_level,
+        )
 
 
 if __name__ == '__main__':

@@ -31,9 +31,9 @@ Migrations can also specify how to revert the changes by including additional st
         order_id uuid PRIMARY KEY,
         price text
     );
-    
+
     --//@UNDO
-    
+
     DROP TABLE orders;
 
 To undo the most recently applied migration, run:
@@ -44,7 +44,7 @@ Python Library Usage
 ====================
 ```python
     from cdeploy import migrator
-    
+
     schema_migrator = migrator.Migrator('/path/to/migrations/directory', cassandra_session)
     schema_migrator.run_migrations()
 ```
@@ -63,7 +63,7 @@ The configuration file specifies the hosts to connect to and the keyspace name, 
     development:
         hosts: [host1]
         keyspace: keyspace_name
-    
+
     production:
         hosts: [host1, host2, host3]
         keyspace: keyspace_name
@@ -71,3 +71,16 @@ The configuration file specifies the hosts to connect to and the keyspace name, 
 The environment can be set via the ENV shell variable, and defaults to development if not specified:
 
     ENV=production cdeploy
+
+Additional configuration parameters for protected Cassandra clusters are
+available:
+
+    development:
+        hosts: [host1]
+        keyspace: keyspace_name
+        auth_enabled: true
+        auth_username: username
+        auth_password: password
+        ssl_enabled: true
+        ssl_ca_certs: /path/to/ca/certs
+        consistency_level: ALL
