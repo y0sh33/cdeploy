@@ -1,7 +1,10 @@
 from __future__ import print_function
 import os
+import ssl
 import sys
 
+import cassandra
+from cassandra import auth
 from cassandra.cluster import Cluster
 import yaml
 
@@ -102,15 +105,47 @@ def main():
         return
 
     config = load_config(migrations_path, os.getenv('ENV'))
-    cluster = Cluster(config['hosts'])
-    session = cluster.connect(config['keyspace'])
 
+    session = get_session(config)
     migrator = Migrator(migrations_path, session)
 
     if undo:
         migrator.undo()
     else:
         migrator.run_migrations()
+
+
+def get_session(config):
+    auth_provider = None
+    if 'auth_enabled' in config and config['auth_enabled']:
+        auth_provider = auth.PlainTextAuthProvider(
+            username=config['auth_username'],
+            password=config['auth_password'],
+        )
+
+    ssl_options = None
+    if 'ssl_enabled' in config and config['ssl_enabled']:
+        ssl_options = {
+            'ca_certs': config['ssl_ca_certs'],
+            'ssl_version': ssl.PROTOCOL_TLSv1,  # pylint: disable=E1101
+        }
+
+    cluster = Cluster(
+        config['hosts'],
+        auth_provider=auth_provider,
+        ssl_options=ssl_options,
+    )
+
+    session = cluster.connect(config['keyspace'])
+
+    if 'consistency_level' in config:
+        consistency_level = getattr(
+            cassandra.ConsistencyLevel,
+            config['consistency_level'],
+        )
+        session.default_consistency_level = consistency_level
+
+    return session
 
 
 def invalid_migrations_dir(migrations_path):
