@@ -67,7 +67,7 @@ class Migrator:
             migration_dir_listing)
 
     def migration_version(self, file_name):
-        return int(file_name.split('_')[0])
+        return int(file_name.split('.')[0].split('_')[0])
 
     def apply_migration(self, file_name):
         migration_script = self.read_migration(file_name)
