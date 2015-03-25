@@ -63,6 +63,16 @@ class ApplyingMigrationTests(unittest.TestCase):
             migration_2_content
         )
 
+    def test_migration_version(self):
+        self.assertEqual(
+            123,
+            self.migrator.migration_version('123.cql')
+        )
+        self.assertEqual(
+            123,
+            self.migrator.migration_version('123_xyz.cql')
+        )
+
 
 class UndoMigrationTests(unittest.TestCase):
     def setUp(self):
