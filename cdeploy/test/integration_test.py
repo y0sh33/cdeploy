@@ -6,13 +6,25 @@ cluster = Cluster(['cassandra.local'])
 session = cluster.connect()
 
 
-def reset_db(keyspace):
+def drop_keyspace(keyspace):
     session.execute('DROP KEYSPACE IF EXISTS {0}'.format(keyspace))
-    session.execute("""
-        CREATE KEYSPACE """ + keyspace + """
-            WITH replication =
-                {'class': 'SimpleStrategy', 'replication_factor': '1'}
-    """)
+
+
+def create_keyspace(keyspace, replication_strategy):
+    session.execute(
+        "CREATE KEYSPACE {0} WITH REPLICATION = {1};".format(
+            keyspace,
+            replication_strategy
+        )
+    )
+
+
+def reset_db(keyspace):
+    drop_keyspace(keyspace)
+    create_keyspace(
+        keyspace,
+        "{'class': 'SimpleStrategy', 'replication_factor': '1'}"
+    )
 
 
 def run_migrator(arg=''):
@@ -38,6 +50,15 @@ class FirstRunTest(unittest.TestCase):
             'SELECT * FROM migrations_development.schema_migrations LIMIT 1'
         )
         self.assertEquals(result[0].version, 2)
+
+    def test_keyspace_nonexistent(self):
+        os.putenv('ENV', 'keyspace')
+        run_migrator()
+        result = session.execute(
+            'SELECT * FROM migrations_keyspace_test.schema_migrations LIMIT 1'
+        )
+        self.assertEquals(result[0].version, 2)
+        drop_keyspace('migrations_keyspace_test')
 
 
 class UndoTest(unittest.TestCase):

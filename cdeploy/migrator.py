@@ -136,7 +136,16 @@ def get_session(config):
         ssl_options=ssl_options,
     )
 
-    session = cluster.connect(config['keyspace'])
+    session = cluster.connect()
+
+    try:
+        session.set_keyspace(config['keyspace'])
+    except cassandra.InvalidRequest:
+        # Keyspace doesn't exist yet
+        if 'create_keyspace' in config and config['create_keyspace']:
+            create_keyspace(config, session)
+        else:
+            raise
 
     if 'consistency_level' in config:
         consistency_level = getattr(
@@ -146,6 +155,16 @@ def get_session(config):
         session.default_consistency_level = consistency_level
 
     return session
+
+
+def create_keyspace(config, session):
+    session.execute(
+        "CREATE KEYSPACE {0} WITH REPLICATION = {1};".format(
+            config['keyspace'],
+            config['replication_strategy']
+        )
+    )
+    session.set_keyspace(config['keyspace'])
 
 
 def invalid_migrations_dir(migrations_path):
