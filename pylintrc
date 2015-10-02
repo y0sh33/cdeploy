@@ -5,3 +5,7 @@ errors-only=yes
 output-format=text
 reports=no
 msg-template={path}:{line}: [{msg_id}({symbol}), {obj}] {msg}
+
+[TYPECHECK]
+# pylint failed on the following module after cassandra updated to 2.7.0
+ignored-modules=cassandra.query,cassandra.protocol,cassandra.cluster
