@@ -130,6 +130,13 @@ class SessionTests(unittest.TestCase):
             'keyspace': 'test',
         }
 
+        self.session = mock.Mock()
+        self.session.set_keyspace.return_value = None
+
+        self.returned_cluster = mock.Mock()
+        self.returned_cluster.connect.return_value = self.session
+        self.mock_cluster.return_value = self.returned_cluster
+
     def test_auth_disabled(self):
         migrator.get_session(self.config)
 
@@ -206,6 +213,39 @@ class SessionTests(unittest.TestCase):
             cassandra.ConsistencyLevel.EACH_QUORUM,
             session.default_consistency_level,
         )
+
+    def test_nonexistent_keyspace_create_enabled(self):
+        self.config['create_keyspace'] = True
+        self.config['replication_strategy'] = 'test'
+
+        self.session.set_keyspace.side_effect = [
+            cassandra.InvalidRequest,
+            None
+        ]
+
+        migrator.get_session(self.config)
+        ((args,), _) = self.session.set_keyspace.call_args
+        self.assertEqual(self.config["keyspace"], args)
+
+        ((args,), _) = self.session.execute.call_args
+        self.assertEqual(
+            "CREATE KEYSPACE {0} WITH REPLICATION = {1};".format(
+                self.config["keyspace"],
+                self.config["replication_strategy"]
+            ),
+            args
+        )
+
+    def test_nonexistent_keyspace_create_disabled(self):
+        self.config['create_keyspace'] = False
+
+        self.session.set_keyspace.side_effect = cassandra.InvalidRequest
+
+        with self.assertRaises(cassandra.InvalidRequest):
+            migrator.get_session(self.config)
+
+        ((args,), _) = self.session.set_keyspace.call_args
+        self.assertEqual(self.config["keyspace"], args)
 
 
 if __name__ == '__main__':
