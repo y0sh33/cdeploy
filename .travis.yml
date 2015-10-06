@@ -1,3 +1,5 @@
+env:
+  - CASS_DRIVER_NO_CYTHON=1
 sudo: false
 language: "python"
 python:
