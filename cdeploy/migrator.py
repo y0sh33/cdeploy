@@ -102,7 +102,7 @@ def main():
 
     if (invalid_migrations_dir(migrations_path) or
             missing_config(migrations_path)):
-        return
+        sys.exit(1)
 
     config = load_config(migrations_path, os.getenv('ENV'))
 
