@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.5
+---
+- Compatibility updates for Cassandra driver 3.0.0 release
+- Adds protection against adding duplicate schema migration files
+- Adds proper exit code when configuration files are missing
+- Integration tests added to tox & Travis CI
+
 1.4
 ---
 - Enables automatic keyspace creation if keyspace isn't found in Cassandra
