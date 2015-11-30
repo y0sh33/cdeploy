@@ -16,7 +16,7 @@ class CQLExecutor:
 
     @staticmethod
     def get_top_version(session):
-        return session.execute('SELECT * FROM schema_migrations LIMIT 1')
+        return list(session.execute('SELECT * FROM schema_migrations LIMIT 1'))
 
     @staticmethod
     def execute(session, script):

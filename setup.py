@@ -10,7 +10,7 @@ setup(
     url='https://github.com/rackerlabs/cdeploy',
     keywords=['cassandra', 'migrations'],
     packages=find_packages(),
-    install_requires=['PyYAML', 'cassandra-driver'],
+    install_requires=['PyYAML', 'cassandra-driver>=3.0.0'],
     tests_require=['mock'],
     test_suite="cdeploy.test",
     entry_points={
