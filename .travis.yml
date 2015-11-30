@@ -1,5 +1,3 @@
-env:
-  - CASS_DRIVER_NO_CYTHON=1
 sudo: false
 language: "python"
 python:
@@ -8,3 +6,8 @@ before_install:
   - "pip install tox"
 script:
   - "tox"
+services:
+  - cassandra
+addons:
+  hosts:
+    - cassandra.local
