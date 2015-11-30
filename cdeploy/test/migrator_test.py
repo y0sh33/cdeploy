@@ -8,6 +8,7 @@ except ImportError:
 
 import cassandra
 
+from cdeploy import exceptions as exc
 from cdeploy import migrator
 from cdeploy import cqlexecutor
 
@@ -72,6 +73,22 @@ class ApplyingMigrationTests(unittest.TestCase):
             123,
             self.migrator.migration_version('123_xyz.cql')
         )
+
+    def test_duplicate_schema_version_new_version(self):
+        cqlexecutor.CQLExecutor.execute = mock.Mock()
+        self.migrator.get_top_version = mock.Mock(return_value=1)
+        self.migrator.filter_migrations = mock.Mock(
+            return_value=['2_second.cql', '2_third.cql'])
+        with self.assertRaises(exc.DuplicateSchemaVersionError):
+            self.migrator.run_migrations()
+
+    def test_duplicate_schema_version_existing_version(self):
+        cqlexecutor.CQLExecutor.execute = mock.Mock()
+        self.migrator.get_top_version = mock.Mock(return_value=2)
+        self.migrator.filter_migrations = mock.Mock(
+            return_value=['1_first.cql', '2_second.cql', '2_third.cql'])
+        with self.assertRaises(exc.DuplicateSchemaVersionError):
+            self.migrator.run_migrations()
 
 
 class UndoMigrationTests(unittest.TestCase):

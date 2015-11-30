@@ -9,9 +9,10 @@ from cassandra.cluster import Cluster
 import yaml
 
 from cdeploy import cqlexecutor
+from cdeploy import exceptions as exc
 
 
-class Migrator:
+class Migrator(object):
     def __init__(self, migrations_path, session):
         print('Reading migrations from {0}'.format(migrations_path))
         self.migrations_path = migrations_path
@@ -22,14 +23,39 @@ class Migrator:
 
         top_version = self.get_top_version()
 
+        def all_migration_filter(f):
+            return (
+                os.path.isfile(os.path.join(self.migrations_path, f))
+            )
+
+        all_migrations = self.filter_migrations(all_migration_filter)
+        versions = [self.migration_version(file_name)
+                    for file_name in all_migrations]
+        duplicates = Migrator._find_duplicates(versions)
+
+        if duplicates:
+            raise exc.DuplicateSchemaVersionError(
+                "Duplicate schema version(s) : {0}".format(duplicates))
+
         def new_migration_filter(f):
             return (
                 os.path.isfile(os.path.join(self.migrations_path, f)) and
                 self.migration_version(f) > top_version
             )
-        new_migrations = self.filter_migrations(new_migration_filter)
 
+        new_migrations = self.filter_migrations(new_migration_filter)
         [self.apply_migration(file_name) for file_name in new_migrations]
+
+    @staticmethod
+    def _find_duplicates(versions):
+        duplicates = []
+        unique = []
+        for version in versions:
+            if version not in unique:
+                unique.append(version)
+            else:
+                duplicates.append(version)
+        return duplicates
 
     def undo(self):
         top_version = self.get_top_version()
