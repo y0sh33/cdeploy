@@ -164,6 +164,26 @@ def get_session(config):
 
     session = cluster.connect()
 
+    # Set session options.  One dict mapping cdeploy option names to
+    # corresponding cassandra session option names; another dict defining any
+    # conversions that need to be done on the value in the config file. This
+    # way new options can be supported just by adding an entry to each dict.
+
+    optmap = {'consistency_level': 'default_consistency_level',
+              'timeout':           'default_timeout'}
+
+    conlevel = cassandra.ConsistencyLevel.name_to_value  # Convenience alias.
+    converters = {'default_consistency_level': (lambda s: conlevel[s])}
+
+    sessionopts = {optmap[arg]: config[arg]
+                   for arg in optmap.keys()
+                   if arg in config}
+
+    for opt, value in sessionopts.items():
+        if opt in converters:
+            value = converters[opt](value)
+        setattr(session, opt, value)
+
     try:
         session.set_keyspace(config['keyspace'])
     except cassandra.InvalidRequest:
@@ -172,13 +192,6 @@ def get_session(config):
             create_keyspace(config, session)
         else:
             raise
-
-    if 'consistency_level' in config:
-        consistency_level = getattr(
-            cassandra.ConsistencyLevel,
-            config['consistency_level'],
-        )
-        session.default_consistency_level = consistency_level
 
     return session
 
