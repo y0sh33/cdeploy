@@ -1,5 +1,8 @@
 Changelog
 =========
+1.6
+---
+- Adds configurable default_timeout setting to Cassandra driver session
 
 1.5
 ---
