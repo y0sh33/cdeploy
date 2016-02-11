@@ -72,8 +72,7 @@ The environment can be set via the ENV shell variable, and defaults to developme
 
     ENV=production cdeploy
 
-Additional configuration parameters for protected Cassandra clusters are
-available:
+Additional configuration parameters for Cassandra are available:
 
     development:
         hosts: [host1]
@@ -84,3 +83,4 @@ available:
         ssl_enabled: true
         ssl_ca_certs: /path/to/ca/certs
         consistency_level: ALL
+        timeout: 10
