@@ -1,4 +1,5 @@
 from __future__ import print_function
+import fnmatch
 import os
 import ssl
 import sys
@@ -87,6 +88,7 @@ class Migrator(object):
         dir_list = os.listdir(self.migrations_path)
         if 'config' in dir_list:
             dir_list.remove('config')
+        dir_list = [f for f in dir_list if fnmatch.fnmatch(f, '*.cql')]
         migration_dir_listing = sorted(dir_list, key=self.migration_version)
         return filter(
             filter_func,

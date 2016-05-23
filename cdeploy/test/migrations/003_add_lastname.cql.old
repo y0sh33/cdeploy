@@ -1,0 +1,3 @@
+ALTER TABLE users ADD lastname text;
+--//@UNDO
+ALTER TABLE users DROP lastname

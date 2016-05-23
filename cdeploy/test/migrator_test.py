@@ -37,7 +37,7 @@ class ApplyingMigrationTests(unittest.TestCase):
             self.session
         )
 
-    def test_it_should_initially_apply_all_the_migrations(self):
+    def test_it_should_initially_apply_all_valid_migrations(self):
         cqlexecutor.CQLExecutor.execute = mock.Mock()
         self.migrator.run_migrations()
         cqlexecutor.CQLExecutor.execute.assert_has_calls([
@@ -54,7 +54,7 @@ class ApplyingMigrationTests(unittest.TestCase):
             mock.call(self.session, 2)
         ])
 
-    def test_it_should_only_run_migrations_that_have_not_been_applied(self):
+    def test_it_should_only_run_valid_migrations_that_have_not_been_applied(self):
         cqlexecutor.CQLExecutor.execute = mock.Mock()
         self.migrator.get_top_version = mock.Mock(return_value=1)
         self.migrator.run_migrations()
