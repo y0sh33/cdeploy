@@ -175,9 +175,9 @@ def get_session(config):
     conlevel = cassandra.ConsistencyLevel.name_to_value  # Convenience alias.
     converters = {'default_consistency_level': (lambda s: conlevel[s])}
 
-    sessionopts = {optmap[arg]: config[arg]
-                   for arg in optmap.keys()
-                   if arg in config}
+    sessionopts = dict((optmap[arg], config[arg])
+                       for arg in optmap.keys()
+                       if arg in config)
 
     for opt, value in sessionopts.items():
         if opt in converters:
