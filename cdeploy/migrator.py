@@ -144,25 +144,23 @@ def main():
 
 
 def get_session(config):
-    auth_provider = None
+    kwargs_dict = dict(contact_points=config['hosts'])
     if 'auth_enabled' in config and config['auth_enabled']:
-        auth_provider = auth.PlainTextAuthProvider(
+        kwargs_dict['auth_provider'] = auth.PlainTextAuthProvider(
             username=config['auth_username'],
             password=config['auth_password'],
         )
 
-    ssl_options = None
     if 'ssl_enabled' in config and config['ssl_enabled']:
-        ssl_options = {
+        kwargs_dict['ssl_options'] = {
             'ca_certs': config['ssl_ca_certs'],
             'ssl_version': ssl.PROTOCOL_TLSv1,  # pylint: disable=E1101
         }
+    if 'port' in config and config['port']:
+        # Cluster will default to port 9042 if unspecified
+        kwargs_dict['port'] = config['port']
 
-    cluster = Cluster(
-        config['hosts'],
-        auth_provider=auth_provider,
-        ssl_options=ssl_options,
-    )
+    cluster = Cluster(**kwargs_dict)
 
     session = cluster.connect()
 
